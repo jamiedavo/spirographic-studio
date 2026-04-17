@@ -4,8 +4,8 @@ import { Play, Pause, Trash2, Download, Settings2, PenTool, Sparkles } from 'luc
 const CANVAS_SIZE = 800;
 const COLORS = {
   paper: '#ffffff', 
-  track: '#475569', // Dark Slate for the big circle
-  gear: '#f59e0b',  // Bright Gold for the moving gear
+  track: '#475569', 
+  gear: '#f59e0b',  
 };
 
 const gcd = (a, b) => b ? gcd(b, a % b) : a;
@@ -41,9 +41,11 @@ const FinleySpiralStudio = () => {
   const drawGuides = useCallback(() => {
     const overlayCtx = overlayCanvasRef.current?.getContext('2d');
     if (!overlayCtx) return;
+    
+    // Always clear the overlay canvas (where the gears live)
     overlayCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     
-    // Auto-hide guides if finished or explicitly hidden
+    // Only draw the gears if we are NOT finished and guides are ON
     if (!showGuides || angleRef.current >= getTargetAngle()) return;
 
     const centerX = CANVAS_SIZE / 2;
@@ -54,14 +56,14 @@ const FinleySpiralStudio = () => {
     const cy = centerY + d * Math.sin(angle);
     const rotation = isEpicycloid ? (angle * (outerRadius / innerRadius)) : -(angle * (outerRadius / innerRadius));
 
-    // 1. BIG CIRCLE (The Outer Track)
+    // BIG TRACK
     overlayCtx.beginPath();
     overlayCtx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
     overlayCtx.strokeStyle = COLORS.track;
-    overlayCtx.lineWidth = 10; // Thick enough to see!
+    overlayCtx.lineWidth = 10;
     overlayCtx.stroke();
 
-    // 2. MOVING GEAR (The Small Circle)
+    // MOVING GEAR
     overlayCtx.beginPath();
     overlayCtx.arc(cx, cy, innerRadius, 0, Math.PI * 2);
     overlayCtx.fillStyle = 'rgba(245, 158, 11, 0.2)';
@@ -70,7 +72,7 @@ const FinleySpiralStudio = () => {
     overlayCtx.lineWidth = 5;
     overlayCtx.stroke();
 
-    // 3. SPOKES (To show the gear spinning)
+    // SPOKES
     for (let i = 0; i < 4; i++) {
       const spokeAngle = rotation + (i * Math.PI / 2);
       overlayCtx.beginPath();
@@ -80,22 +82,15 @@ const FinleySpiralStudio = () => {
       overlayCtx.lineWidth = 3;
       overlayCtx.stroke();
     }
-
-    // 4. PEN DOT (The active drawing point)
-    const penPos = {
-      x: cx + (innerRadius * pens[0].offset) * Math.cos(rotation),
-      y: cy + (innerRadius * pens[0].offset) * Math.sin(rotation)
-    };
-    overlayCtx.beginPath();
-    overlayCtx.arc(penPos.x, penPos.y, 4, 0, Math.PI * 2);
-    overlayCtx.fillStyle = '#000';
-    overlayCtx.fill();
-  }, [showGuides, outerRadius, innerRadius, isEpicycloid, getTargetAngle, pens]);
+  }, [showGuides, outerRadius, innerRadius, isEpicycloid, getTargetAngle]);
 
   useEffect(() => {
     const ctx = mainCanvasRef.current.getContext('2d');
-    ctx.fillStyle = COLORS.paper;
-    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    // Only fill the background once at the very start
+    if (angleRef.current === 0) {
+      ctx.fillStyle = COLORS.paper;
+      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    }
     drawGuides();
   }, [drawGuides]);
 
@@ -103,9 +98,11 @@ const FinleySpiralStudio = () => {
     if (!isPlaying) return;
     
     const target = getTargetAngle();
+    
+    // Stop precisely when target is reached
     if (angleRef.current >= target) {
       setIsPlaying(false);
-      setShowGuides(false); // Drawing complete
+      drawGuides(); // This will clear the gears because angle >= target
       return;
     }
 
@@ -154,7 +151,7 @@ const FinleySpiralStudio = () => {
     ctx.fillStyle = COLORS.paper;
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     angleRef.current = 0;
-    setShowGuides(true);
+    setIsPlaying(false);
     drawGuides();
   };
 
@@ -170,16 +167,16 @@ const FinleySpiralStudio = () => {
 
         <section className="space-y-4">
           <h2 className="text-blue-500 font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
-            <Settings2 size={14} /> Gear Settings
+            Settings
           </h2>
           <ControlGroup label="Big Circle" value={outerRadius} min={10} max={380} color="bg-red-400" onChange={setOuterRadius} />
           <ControlGroup label="Small Gear" value={innerRadius} min={5} max={380} color="bg-blue-400" onChange={setInnerRadius} />
-          <ControlGroup label="Turbo Speed" value={speed} min={0.01} max={1.5} step={0.01} color="bg-green-400" onChange={setSpeed} />
+          <ControlGroup label="Speed" value={speed} min={0.01} max={1.5} step={0.01} color="bg-green-400" onChange={setSpeed} />
         </section>
 
         <section className="space-y-4">
           <h2 className="text-blue-500 font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
-            <PenTool size={14} /> Pick Your Pens
+            Pens
           </h2>
           {pens.map((pen, idx) => (
             <div key={pen.id} className={`p-3 rounded-xl border-4 transition-all ${pen.active ? 'bg-white border-yellow-400 shadow-md' : 'opacity-40 border-slate-100'}`}>
