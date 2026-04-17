@@ -60,7 +60,7 @@ const FinleySpiralStudio = () => {
     overlayCtx.beginPath();
     overlayCtx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
     overlayCtx.strokeStyle = COLORS.track;
-    overlayCtx.lineWidth = 10;
+    overlayCtx.lineWidth = 5;
     overlayCtx.stroke();
 
     // MOVING GEAR
@@ -69,7 +69,7 @@ const FinleySpiralStudio = () => {
     overlayCtx.fillStyle = 'rgba(245, 158, 11, 0.2)';
     overlayCtx.fill();
     overlayCtx.strokeStyle = COLORS.gear;
-    overlayCtx.lineWidth = 5;
+    overlayCtx.lineWidth = 3;
     overlayCtx.stroke();
 
     // SPOKES
