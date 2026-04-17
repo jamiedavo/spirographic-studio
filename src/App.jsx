@@ -5,7 +5,7 @@ const CANVAS_SIZE = 800;
 const COLORS = {
   paper: '#fffff2', 
   track: '#D3D3D3', 
-  gear: '#f59e0b',  
+  gear: '#FFF1A3',  
 };
 
 const gcd = (a, b) => b ? gcd(b, a % b) : a;
@@ -60,7 +60,7 @@ const FinleySpiralStudio = () => {
     overlayCtx.beginPath();
     overlayCtx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
     overlayCtx.strokeStyle = COLORS.track;
-    overlayCtx.lineWidth = 5;
+    overlayCtx.lineWidth = 3;
     overlayCtx.stroke();
 
     // MOVING GEAR
@@ -79,7 +79,7 @@ const FinleySpiralStudio = () => {
       overlayCtx.moveTo(cx, cy);
       overlayCtx.lineTo(cx + innerRadius * Math.cos(spokeAngle), cy + innerRadius * Math.sin(spokeAngle));
       overlayCtx.strokeStyle = COLORS.gear;
-      overlayCtx.lineWidth = 3;
+      overlayCtx.lineWidth = 2;
       overlayCtx.stroke();
     }
   }, [showGuides, outerRadius, innerRadius, isEpicycloid, getTargetAngle]);
