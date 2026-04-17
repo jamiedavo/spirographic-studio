@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, Trash2, Download, Settings2, PenTool, Eye, EyeOff, FastForward } from 'lucide-react';
+import { Play, Pause, Trash2, Download, Settings2, PenTool, Eye, EyeOff } from 'lucide-react';
 
 const CANVAS_SIZE = 800;
 const COLORS = {
@@ -15,11 +15,11 @@ const SpirographStudio = () => {
   const [outerRadius, setOuterRadius] = useState(250);
   const [innerRadius, setInnerRadius] = useState(105);
   const [isEpicycloid, setIsEpicycloid] = useState(false);
-  const [speed, setSpeed] = useState(0.06); // Default speed
+  const [speed, setSpeed] = useState(0.06);
   const [pens, setPens] = useState([
-    { id: 1, offset: 0.7, color: '#1c1917', active: true, width: 1.5 },
-    { id: 2, offset: 0.4, color: '#44403c', active: false, width: 1.2 },
-    { id: 3, offset: 0.9, color: '#92400e', active: false, width: 1.8 },
+    { id: 1, offset: 0.7, color: '#1c1917', active: true, width: 1.0 },
+    { id: 2, offset: 0.4, color: '#44403c', active: false, width: 1.0 },
+    { id: 3, offset: 0.9, color: '#92400e', active: false, width: 1.0 },
   ]);
 
   const [showGuides, setShowGuides] = useState(true);
@@ -83,8 +83,6 @@ const SpirographStudio = () => {
   const animate = useCallback(() => {
     if (!isPlaying) return;
     const mainCtx = mainCanvasRef.current.getContext('2d');
-    
-    // Increased sub-steps for high-speed smoothness
     const steps = 12; 
     for (let s = 0; s < steps; s++) {
       const prevAngle = angleRef.current;
@@ -151,9 +149,7 @@ const SpirographStudio = () => {
           <div className="space-y-8">
             <ControlGroup label="Base Circle" value={outerRadius} min={10} max={380} onChange={setOuterRadius} />
             <ControlGroup label="Moving Circle" value={innerRadius} min={5} max={380} onChange={setInnerRadius} />
-            
-            {/* --- Speed Slider Addition --- */}
-            <ControlGroup label="Drawing Speed" value={speed} min={0.01} max={0.4} step={0.01} onChange={setSpeed} />
+            <ControlGroup label="Drawing Speed" value={speed} min={0.01} max={0.5} step={0.01} onChange={setSpeed} />
             
             <div className="flex flex-col gap-3">
               <label className="text-xs font-bold uppercase tracking-widest text-stone-600">Track Type</label>
@@ -181,10 +177,16 @@ const SpirographStudio = () => {
                 }} />
               </div>
               {pen.active && (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <ControlGroup label="Pen Position" value={pen.offset} min={0} max={3} step={0.01} onChange={(v) => {
                     const newPens = [...pens];
                     newPens[idx].offset = v;
+                    setPens(newPens);
+                  }} />
+                  {/* --- NEW DENSITY / WIDTH SLIDER --- */}
+                  <ControlGroup label="Line Weight" value={pen.width} min={0.1} max={5} step={0.1} onChange={(v) => {
+                    const newPens = [...pens];
+                    newPens[idx].width = v;
                     setPens(newPens);
                   }} />
                   <div className="flex justify-between items-center pt-2">
@@ -209,10 +211,6 @@ const SpirographStudio = () => {
 
       <main className="flex-1 relative flex items-center justify-center p-8 bg-stone-300/30">
         <div className="relative shadow-[0_0_60px_rgba(0,0,0,0.1)] rounded-sm overflow-hidden bg-white border-[16px] border-white">
-           <div 
-            className="absolute inset-0 pointer-events-none opacity-20"
-            style={{ backgroundImage: `radial-gradient(#a8a29e 1.5px, transparent 0)`, backgroundSize: '32px 32px' }}
-          ></div>
           <canvas ref={mainCanvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} />
           <canvas ref={overlayCanvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} className="absolute top-0 left-0 pointer-events-none" />
         </div>
