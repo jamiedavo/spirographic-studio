@@ -11,6 +11,8 @@ const COLORS = {
   sidebarBg: '#f3f1ed', 
 };
 
+const gcd = (a, b) => b ? gcd(b, a % b) : a;
+
 const SpirographStudio = () => {
   const [outerRadius, setOuterRadius] = useState(250);
   const [innerRadius, setInnerRadius] = useState(105);
@@ -30,12 +32,24 @@ const SpirographStudio = () => {
   const requestRef = useRef();
   const angleRef = useRef(0);
 
+  // Math to find the exact end of the loop
+  const getTargetAngle = useCallback(() => {
+    const r1 = Math.round(outerRadius);
+    const r2 = Math.round(innerRadius);
+    if (r1 === 0 || r2 === 0) return 0;
+    const common = gcd(r1, r2);
+    const circuits = r2 / common;
+    return circuits * Math.PI * 2;
+  }, [outerRadius, innerRadius]);
+
   const drawGuides = useCallback(() => {
     const overlayCtx = overlayCanvasRef.current?.getContext('2d');
     if (!overlayCtx) return;
 
     overlayCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    if (!showGuides) return;
+    
+    // Auto-hide guides if finished or explicitly hidden
+    if (!showGuides || (angleRef.current >= getTargetAngle() && angleRef.current > 0)) return;
 
     const centerX = CANVAS_SIZE / 2;
     const centerY = CANVAS_SIZE / 2;
@@ -45,6 +59,7 @@ const SpirographStudio = () => {
     const cy = centerY + d * Math.sin(angle);
     const rotation = isEpicycloid ? (angle * (outerRadius / innerRadius)) : -(angle * (outerRadius / innerRadius));
 
+    // Outer Circle Track
     overlayCtx.beginPath();
     overlayCtx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
     overlayCtx.strokeStyle = COLORS.guideMed;
@@ -53,38 +68,57 @@ const SpirographStudio = () => {
     overlayCtx.stroke();
     overlayCtx.setLineDash([]);
 
+    // Brass Gear
     overlayCtx.beginPath();
     overlayCtx.arc(cx, cy, innerRadius, 0, Math.PI * 2);
     overlayCtx.strokeStyle = COLORS.brass;
     overlayCtx.lineWidth = 2;
     overlayCtx.stroke();
 
+    // Pen arm connecting center to pen point
     overlayCtx.beginPath();
     overlayCtx.moveTo(cx, cy);
     overlayCtx.lineTo(cx + innerRadius * Math.cos(rotation), cy + innerRadius * Math.sin(rotation));
+    overlayCtx.strokeStyle = COLORS.guideMed;
     overlayCtx.stroke();
 
+    // Show active pen positions on the gear
     pens.forEach(pen => {
       if (!pen.active) return;
       const px = cx + (innerRadius * pen.offset) * Math.cos(rotation);
       const py = cy + (innerRadius * pen.offset) * Math.sin(rotation);
       overlayCtx.beginPath();
-      overlayCtx.arc(px, py, 5, 0, Math.PI * 2);
+      overlayCtx.arc(px, py, 4, 0, Math.PI * 2);
       overlayCtx.fillStyle = pen.color;
       overlayCtx.fill();
-      overlayCtx.strokeStyle = 'white';
-      overlayCtx.lineWidth = 2;
-      overlayCtx.stroke();
     });
-  }, [showGuides, outerRadius, innerRadius, isEpicycloid, pens]);
+  }, [showGuides, outerRadius, innerRadius, isEpicycloid, pens, getTargetAngle]);
 
-  useEffect(() => { drawGuides(); }, [drawGuides, outerRadius, innerRadius, isEpicycloid, pens, showGuides]);
+  // Initial draw so gear and track appear on start-up
+  useEffect(() => {
+    const ctx = mainCanvasRef.current.getContext('2d');
+    ctx.fillStyle = COLORS.paper;
+    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    drawGuides();
+  }, [drawGuides]);
 
   const animate = useCallback(() => {
     if (!isPlaying) return;
+    
+    const target = getTargetAngle();
+    // Stop when finished and hide tools
+    if (angleRef.current >= target) {
+      setIsPlaying(false);
+      setShowGuides(false); 
+      drawGuides();
+      return;
+    }
+
     const mainCtx = mainCanvasRef.current.getContext('2d');
     const steps = 12; 
     for (let s = 0; s < steps; s++) {
+      if (angleRef.current >= target) break;
+      
       const prevAngle = angleRef.current;
       angleRef.current += speed / steps;
       const currentAngle = angleRef.current;
@@ -112,29 +146,24 @@ const SpirographStudio = () => {
     }
     drawGuides();
     requestRef.current = requestAnimationFrame(animate);
-  }, [isPlaying, outerRadius, innerRadius, isEpicycloid, speed, pens, drawGuides]);
+  }, [isPlaying, outerRadius, innerRadius, isEpicycloid, speed, pens, drawGuides, getTargetAngle]);
 
   useEffect(() => {
     if (isPlaying) requestRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(requestRef.current);
   }, [isPlaying, animate]);
 
-  useEffect(() => {
-    const ctx = mainCanvasRef.current.getContext('2d');
-    ctx.fillStyle = COLORS.paper;
-    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-  }, []);
-
   const handleClear = () => {
     const ctx = mainCanvasRef.current.getContext('2d');
     ctx.fillStyle = COLORS.paper;
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     angleRef.current = 0;
+    setShowGuides(true); // Bring back tools on clear
     drawGuides();
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden text-stone-900" style={{ backgroundColor: '#e7e5e4' }}>
+    <div className="flex h-screen w-full overflow-hidden text-stone-900 bg-stone-300/30">
       <aside className="w-96 h-full border-r border-stone-400 bg-stone-100 shadow-2xl overflow-y-auto p-8 flex flex-col gap-10 z-10">
         <header>
           <h1 className="text-2xl font-bold tracking-widest uppercase text-stone-800">Spirograph Studio</h1>
@@ -183,7 +212,6 @@ const SpirographStudio = () => {
                     newPens[idx].offset = v;
                     setPens(newPens);
                   }} />
-                  {/* --- NEW DENSITY / WIDTH SLIDER --- */}
                   <ControlGroup label="Line Weight" value={pen.width} min={0.1} max={5} step={0.1} onChange={(v) => {
                     const newPens = [...pens];
                     newPens[idx].width = v;
@@ -209,7 +237,7 @@ const SpirographStudio = () => {
         </button>
       </aside>
 
-      <main className="flex-1 relative flex items-center justify-center p-8 bg-stone-300/30">
+      <main className="flex-1 relative flex items-center justify-center p-8">
         <div className="relative shadow-[0_0_60px_rgba(0,0,0,0.1)] rounded-sm overflow-hidden bg-white border-[16px] border-white">
           <canvas ref={mainCanvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} />
           <canvas ref={overlayCanvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} className="absolute top-0 left-0 pointer-events-none" />
