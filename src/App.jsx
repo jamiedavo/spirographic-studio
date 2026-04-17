@@ -52,7 +52,7 @@ const FinleySpiralStudio = () => {
     const cx = centerX + d * Math.cos(angle);
     const cy = centerY + d * Math.sin(angle);
     
-    // Exact same rotation logic as the pen
+    // LOCKED ROTATION: This must match the getPos math exactly
     const rotation = isEpicycloid ? (angle * (outerRadius / innerRadius)) : -(angle * (outerRadius / innerRadius));
 
     // Big Track
@@ -62,14 +62,14 @@ const FinleySpiralStudio = () => {
     overlayCtx.lineWidth = 2;
     overlayCtx.stroke();
 
-    // Moving Gear Outline
+    // Moving Gear
     overlayCtx.beginPath();
     overlayCtx.arc(cx, cy, innerRadius, 0, Math.PI * 2);
     overlayCtx.strokeStyle = COLORS.gear;
     overlayCtx.lineWidth = 3;
     overlayCtx.stroke();
 
-    // Yellow Spokes (Center of the Gear)
+    // Spokes (The X that marks the spot)
     for (let i = 0; i < 4; i++) {
       const spokeAngle = rotation + (i * Math.PI / 2);
       overlayCtx.beginPath();
@@ -111,8 +111,8 @@ const FinleySpiralStudio = () => {
       pens.forEach((pen) => {
         if (!pen.active) return;
         const getPos = (a) => {
+          // SYNCED ROTATION: Matching the visual guides
           const rot = isEpicycloid ? (a * (outerRadius / innerRadius)) : -(a * (outerRadius / innerRadius));
-          // If pen.offset is 0, this mathematically becomes exactly cx and cy
           return {
             x: CANVAS_SIZE / 2 + d * Math.cos(a) + (innerRadius * pen.offset) * Math.cos(rot),
             y: CANVAS_SIZE / 2 + d * Math.sin(a) + (innerRadius * pen.offset) * Math.sin(rot)
