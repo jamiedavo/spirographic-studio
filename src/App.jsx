@@ -5,7 +5,7 @@ const CANVAS_SIZE = 800;
 const COLORS = {
   paper: '#ffffff', 
   track: '#d3d3d3', 
-  gear: '#f8f87c',  
+  gear: '#f59e0b',  
 };
 
 const gcd = (a, b) => b ? gcd(b, a % b) : a;
@@ -51,30 +51,32 @@ const FinleySpiralStudio = () => {
     const d = isEpicycloid ? outerRadius + innerRadius : outerRadius - innerRadius;
     const cx = centerX + d * Math.cos(angle);
     const cy = centerY + d * Math.sin(angle);
+    
+    // Exact same rotation logic as the pen
     const rotation = isEpicycloid ? (angle * (outerRadius / innerRadius)) : -(angle * (outerRadius / innerRadius));
 
     // Big Track
     overlayCtx.beginPath();
     overlayCtx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
     overlayCtx.strokeStyle = COLORS.track;
-    overlayCtx.lineWidth = 3;
+    overlayCtx.lineWidth = 2;
     overlayCtx.stroke();
 
-    // Moving Gear
+    // Moving Gear Outline
     overlayCtx.beginPath();
     overlayCtx.arc(cx, cy, innerRadius, 0, Math.PI * 2);
     overlayCtx.strokeStyle = COLORS.gear;
-    overlayCtx.lineWidth = 4;
+    overlayCtx.lineWidth = 3;
     overlayCtx.stroke();
 
-    // Spokes
+    // Yellow Spokes (Center of the Gear)
     for (let i = 0; i < 4; i++) {
       const spokeAngle = rotation + (i * Math.PI / 2);
       overlayCtx.beginPath();
       overlayCtx.moveTo(cx, cy);
       overlayCtx.lineTo(cx + innerRadius * Math.cos(spokeAngle), cy + innerRadius * Math.sin(spokeAngle));
       overlayCtx.strokeStyle = COLORS.gear;
-      overlayCtx.lineWidth = 3;
+      overlayCtx.lineWidth = 2;
       overlayCtx.stroke();
     }
   }, [showGuides, outerRadius, innerRadius, isEpicycloid, getTargetAngle]);
@@ -105,10 +107,12 @@ const FinleySpiralStudio = () => {
       angleRef.current += speed / steps;
       const currentAngle = angleRef.current;
       const d = isEpicycloid ? outerRadius + innerRadius : outerRadius - innerRadius;
+      
       pens.forEach((pen) => {
         if (!pen.active) return;
         const getPos = (a) => {
           const rot = isEpicycloid ? (a * (outerRadius / innerRadius)) : -(a * (outerRadius / innerRadius));
+          // If pen.offset is 0, this mathematically becomes exactly cx and cy
           return {
             x: CANVAS_SIZE / 2 + d * Math.cos(a) + (innerRadius * pen.offset) * Math.cos(rot),
             y: CANVAS_SIZE / 2 + d * Math.sin(a) + (innerRadius * pen.offset) * Math.sin(rot)
