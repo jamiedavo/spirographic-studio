@@ -32,7 +32,6 @@ const SpirographStudio = () => {
   const requestRef = useRef();
   const angleRef = useRef(0);
 
-  // Math to find the exact end of the loop
   const getTargetAngle = useCallback(() => {
     const r1 = Math.round(outerRadius);
     const r2 = Math.round(innerRadius);
@@ -48,8 +47,9 @@ const SpirographStudio = () => {
 
     overlayCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     
-    // Auto-hide guides if finished or explicitly hidden
-    if (!showGuides || (angleRef.current >= getTargetAngle() && angleRef.current > 0)) return;
+    // Only show guides if playing or if we haven't started/finished yet
+    const target = getTargetAngle();
+    if (!showGuides || (angleRef.current >= target && !isPlaying)) return;
 
     const centerX = CANVAS_SIZE / 2;
     const centerY = CANVAS_SIZE / 2;
@@ -59,7 +59,6 @@ const SpirographStudio = () => {
     const cy = centerY + d * Math.sin(angle);
     const rotation = isEpicycloid ? (angle * (outerRadius / innerRadius)) : -(angle * (outerRadius / innerRadius));
 
-    // Outer Circle Track
     overlayCtx.beginPath();
     overlayCtx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
     overlayCtx.strokeStyle = COLORS.guideMed;
@@ -68,21 +67,12 @@ const SpirographStudio = () => {
     overlayCtx.stroke();
     overlayCtx.setLineDash([]);
 
-    // Brass Gear
     overlayCtx.beginPath();
     overlayCtx.arc(cx, cy, innerRadius, 0, Math.PI * 2);
     overlayCtx.strokeStyle = COLORS.brass;
     overlayCtx.lineWidth = 2;
     overlayCtx.stroke();
 
-    // Pen arm connecting center to pen point
-    overlayCtx.beginPath();
-    overlayCtx.moveTo(cx, cy);
-    overlayCtx.lineTo(cx + innerRadius * Math.cos(rotation), cy + innerRadius * Math.sin(rotation));
-    overlayCtx.strokeStyle = COLORS.guideMed;
-    overlayCtx.stroke();
-
-    // Show active pen positions on the gear
     pens.forEach(pen => {
       if (!pen.active) return;
       const px = cx + (innerRadius * pen.offset) * Math.cos(rotation);
@@ -92,30 +82,28 @@ const SpirographStudio = () => {
       overlayCtx.fillStyle = pen.color;
       overlayCtx.fill();
     });
-  }, [showGuides, outerRadius, innerRadius, isEpicycloid, pens, getTargetAngle]);
+  }, [showGuides, isPlaying, outerRadius, innerRadius, isEpicycloid, pens, getTargetAngle]);
 
-  // Initial draw so gear and track appear on start-up
   useEffect(() => {
     const ctx = mainCanvasRef.current.getContext('2d');
     ctx.fillStyle = COLORS.paper;
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     drawGuides();
-  }, [drawGuides]);
+  }, []); // Only run once on mount
 
   const animate = useCallback(() => {
     if (!isPlaying) return;
     
     const target = getTargetAngle();
-    // Stop when finished and hide tools
     if (angleRef.current >= target) {
       setIsPlaying(false);
-      setShowGuides(false); 
-      drawGuides();
+      // We don't clear the main canvas here anymore!
+      drawGuides(); 
       return;
     }
 
     const mainCtx = mainCanvasRef.current.getContext('2d');
-    const steps = 12; 
+    const steps = 15; 
     for (let s = 0; s < steps; s++) {
       if (angleRef.current >= target) break;
       
@@ -158,7 +146,7 @@ const SpirographStudio = () => {
     ctx.fillStyle = COLORS.paper;
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     angleRef.current = 0;
-    setShowGuides(true); // Bring back tools on clear
+    setIsPlaying(false);
     drawGuides();
   };
 
@@ -166,7 +154,7 @@ const SpirographStudio = () => {
     <div className="flex h-screen w-full overflow-hidden text-stone-900 bg-stone-300/30">
       <aside className="w-96 h-full border-r border-stone-400 bg-stone-100 shadow-2xl overflow-y-auto p-8 flex flex-col gap-10 z-10">
         <header>
-          <h1 className="text-2xl font-bold tracking-widest uppercase text-stone-800">Spirograph Studio</h1>
+          <h1 className="text-2xl font-bold tracking-widest uppercase text-stone-800 italic">Analytical Spiro</h1>
           <div className="h-1 w-16 bg-stone-800 mt-2"></div>
         </header>
 
@@ -176,30 +164,22 @@ const SpirographStudio = () => {
             <h2 className="text-sm font-black uppercase tracking-widest">Mechanism</h2>
           </div>
           <div className="space-y-8">
-            <ControlGroup label="Base Circle" value={outerRadius} min={10} max={380} onChange={setOuterRadius} />
-            <ControlGroup label="Moving Circle" value={innerRadius} min={5} max={380} onChange={setInnerRadius} />
-            <ControlGroup label="Drawing Speed" value={speed} min={0.01} max={0.5} step={0.01} onChange={setSpeed} />
-            
-            <div className="flex flex-col gap-3">
-              <label className="text-xs font-bold uppercase tracking-widest text-stone-600">Track Type</label>
-              <div className="flex p-1.5 bg-stone-300 rounded-lg">
-                <button onClick={() => setIsEpicycloid(false)} className={`flex-1 py-2 text-sm rounded-md transition-all ${!isEpicycloid ? 'bg-white shadow-md font-bold text-stone-900' : 'text-stone-600 hover:text-stone-800'}`}>Inside</button>
-                <button onClick={() => setIsEpicycloid(true)} className={`flex-1 py-2 text-sm rounded-md transition-all ${isEpicycloid ? 'bg-white shadow-md font-bold text-stone-900' : 'text-stone-600 hover:text-stone-800'}`}>Outside</button>
-              </div>
-            </div>
+            <ControlGroup label="Fixed Radius" value={outerRadius} min={10} max={380} onChange={setOuterRadius} />
+            <ControlGroup label="Moving Radius" value={innerRadius} min={5} max={380} onChange={setInnerRadius} />
+            <ControlGroup label="Velocity" value={speed} min={0.01} max={1.5} step={0.01} onChange={setSpeed} />
           </div>
         </section>
 
         <section className="flex flex-col gap-6">
           <div className="flex items-center gap-3 text-stone-600">
             <PenTool size={20} />
-            <h2 className="text-sm font-black uppercase tracking-widest">Active Pens</h2>
+            <h2 className="text-sm font-black uppercase tracking-widest">Pen Configuration</h2>
           </div>
           {pens.map((pen, idx) => (
-            <div key={pen.id} className={`p-5 rounded-xl border-2 transition-all ${pen.active ? 'border-stone-400 bg-white' : 'border-transparent opacity-50 bg-stone-200'}`}>
+            <div key={pen.id} className={`p-5 rounded-xl border-2 transition-all ${pen.active ? 'border-stone-400 bg-white shadow-sm' : 'border-transparent opacity-40'}`}>
               <div className="flex justify-between items-center mb-4">
-                <span className="text-sm font-bold text-stone-800">Pen {idx + 1}</span>
-                <input type="checkbox" className="w-5 h-5 accent-stone-800 cursor-pointer" checked={pen.active} onChange={(e) => {
+                <span className="text-xs font-bold text-stone-500 uppercase tracking-tighter">Probe {idx + 1}</span>
+                <input type="checkbox" className="w-4 h-4 accent-stone-800 cursor-pointer" checked={pen.active} onChange={(e) => {
                   const newPens = [...pens];
                   newPens[idx].active = e.target.checked;
                   setPens(newPens);
@@ -207,24 +187,16 @@ const SpirographStudio = () => {
               </div>
               {pen.active && (
                 <div className="space-y-6">
-                  <ControlGroup label="Pen Position" value={pen.offset} min={0} max={3} step={0.01} onChange={(v) => {
+                  <ControlGroup label="Offset Ratio" value={pen.offset} min={0} max={3} step={0.01} onChange={(v) => {
                     const newPens = [...pens];
                     newPens[idx].offset = v;
                     setPens(newPens);
                   }} />
-                  <ControlGroup label="Line Weight" value={pen.width} min={0.1} max={5} step={0.1} onChange={(v) => {
+                  <input type="color" value={pen.color} className="w-full h-8 cursor-pointer rounded border border-stone-200" onChange={(e) => {
                     const newPens = [...pens];
-                    newPens[idx].width = v;
+                    newPens[idx].color = e.target.value;
                     setPens(newPens);
                   }} />
-                  <div className="flex justify-between items-center pt-2">
-                    <label className="text-xs font-bold uppercase text-stone-500 tracking-tighter">Ink Color</label>
-                    <input type="color" value={pen.color} className="w-8 h-8 cursor-pointer rounded overflow-hidden" onChange={(e) => {
-                      const newPens = [...pens];
-                      newPens[idx].color = e.target.value;
-                      setPens(newPens);
-                    }} />
-                  </div>
                 </div>
               )}
             </div>
@@ -233,29 +205,27 @@ const SpirographStudio = () => {
 
         <button onClick={() => setShowGuides(!showGuides)} className={`mt-auto w-full flex items-center justify-center gap-3 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${showGuides ? 'bg-stone-800 text-white shadow-lg' : 'bg-white border-2 border-stone-400 text-stone-600'}`}>
           {showGuides ? <Eye size={20} /> : <EyeOff size={20} />}
-          Guides {showGuides ? 'Visible' : 'Hidden'}
+          Guides {showGuides ? 'Enabled' : 'Disabled'}
         </button>
       </aside>
 
       <main className="flex-1 relative flex items-center justify-center p-8">
-        <div className="relative shadow-[0_0_60px_rgba(0,0,0,0.1)] rounded-sm overflow-hidden bg-white border-[16px] border-white">
+        <div className="relative shadow-2xl rounded-sm bg-white border-[12px] border-white">
           <canvas ref={mainCanvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} />
           <canvas ref={overlayCanvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} className="absolute top-0 left-0 pointer-events-none" />
         </div>
         
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-8 px-10 py-5 bg-stone-900 text-white rounded-full shadow-2xl border border-stone-700">
-          <button onClick={handleClear} className="p-2 hover:text-red-400 transition-colors" title="Wipe Paper"><Trash2 size={24} /></button>
-          <div className="h-8 w-px bg-stone-700"></div>
-          <button onClick={() => setIsPlaying(!isPlaying)} className="w-16 h-16 flex items-center justify-center rounded-full bg-white text-stone-900 hover:scale-105 transition-transform shadow-inner">
+        <div className="absolute bottom-10 flex items-center gap-6 px-8 py-4 bg-stone-900 text-white rounded-2xl shadow-2xl">
+          <button onClick={handleClear} className="p-2 hover:text-red-400 transition-colors"><Trash2 size={24} /></button>
+          <button onClick={() => setIsPlaying(!isPlaying)} className="w-14 h-14 flex items-center justify-center rounded-full bg-white text-stone-900 hover:scale-105 transition-transform">
             {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} className="ml-1" fill="currentColor" />}
           </button>
-          <div className="h-8 w-px bg-stone-700"></div>
           <button onClick={() => {
             const link = document.createElement('a');
-            link.download = 'spirograph.png';
+            link.download = 'analysis.png';
             link.href = mainCanvasRef.current.toDataURL();
             link.click();
-          }} className="p-2 hover:text-amber-400 transition-colors" title="Export Design"><Download size={24} /></button>
+          }} className="p-2 hover:text-blue-400 transition-colors"><Download size={24} /></button>
         </div>
       </main>
     </div>
@@ -263,24 +233,12 @@ const SpirographStudio = () => {
 };
 
 const ControlGroup = ({ label, value, min, max, step = 1, onChange }) => (
-  <div className="flex flex-col gap-3">
-    <div className="flex justify-between items-center">
-      <label className="text-xs font-black uppercase tracking-widest text-stone-700">{label}</label>
-      <input 
-        type="number" 
-        value={value} 
-        step={step}
-        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-        className="w-16 bg-white border-2 border-stone-300 rounded-md p-1.5 text-sm font-mono text-center focus:outline-none focus:border-stone-800 text-stone-900 shadow-sm"
-      />
+  <div className="flex flex-col gap-2">
+    <div className="flex justify-between items-center text-[10px] font-black uppercase text-stone-500 tracking-wider">
+      <label>{label}</label>
+      <span className="font-mono bg-stone-200 px-2 py-0.5 rounded text-stone-800">{value}</span>
     </div>
-    <input 
-      type="range" 
-      min={min} max={max} step={step} 
-      value={value} 
-      onChange={(e) => onChange(parseFloat(e.target.value))} 
-      className="w-full accent-stone-800 h-2 bg-stone-300 rounded-lg appearance-none cursor-pointer" 
-    />
+    <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(parseFloat(e.target.value))} className="w-full accent-stone-800 h-1.5 bg-stone-300 rounded-lg appearance-none cursor-pointer" />
   </div>
 );
 
