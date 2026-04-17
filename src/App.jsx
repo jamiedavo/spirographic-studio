@@ -1,21 +1,21 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, Trash2, Download, Settings2, PenTool, Eye, EyeOff } from 'lucide-react';
+import { Play, Pause, Trash2, Download, Settings2, PenTool, Eye, EyeOff, FastForward } from 'lucide-react';
 
 const CANVAS_SIZE = 800;
 const COLORS = {
   paper: '#fdfaf5', 
   grid: '#e8e2d8',
-  graphite: '#1c1917', // Darker for better contrast
-  brass: '#92400e',    // Deep brass
-  guideMed: 'rgba(28, 25, 23, 0.2)', // Stronger guide contrast
-  sidebarBg: '#f3f1ed', // Solid background for better text legibility
+  graphite: '#1c1917', 
+  brass: '#92400e',    
+  guideMed: 'rgba(28, 25, 23, 0.2)', 
+  sidebarBg: '#f3f1ed', 
 };
 
 const SpirographStudio = () => {
   const [outerRadius, setOuterRadius] = useState(250);
   const [innerRadius, setInnerRadius] = useState(105);
   const [isEpicycloid, setIsEpicycloid] = useState(false);
-  const [speed, setSpeed] = useState(0.05);
+  const [speed, setSpeed] = useState(0.06); // Default speed
   const [pens, setPens] = useState([
     { id: 1, offset: 0.7, color: '#1c1917', active: true, width: 1.5 },
     { id: 2, offset: 0.4, color: '#44403c', active: false, width: 1.2 },
@@ -83,7 +83,9 @@ const SpirographStudio = () => {
   const animate = useCallback(() => {
     if (!isPlaying) return;
     const mainCtx = mainCanvasRef.current.getContext('2d');
-    const steps = 8; 
+    
+    // Increased sub-steps for high-speed smoothness
+    const steps = 12; 
     for (let s = 0; s < steps; s++) {
       const prevAngle = angleRef.current;
       angleRef.current += speed / steps;
@@ -135,7 +137,6 @@ const SpirographStudio = () => {
 
   return (
     <div className="flex h-screen w-full overflow-hidden text-stone-900" style={{ backgroundColor: '#e7e5e4' }}>
-      {/* Wider, higher contrast sidebar */}
       <aside className="w-96 h-full border-r border-stone-400 bg-stone-100 shadow-2xl overflow-y-auto p-8 flex flex-col gap-10 z-10">
         <header>
           <h1 className="text-2xl font-bold tracking-widest uppercase text-stone-800">Spirograph Studio</h1>
@@ -150,6 +151,9 @@ const SpirographStudio = () => {
           <div className="space-y-8">
             <ControlGroup label="Base Circle" value={outerRadius} min={10} max={380} onChange={setOuterRadius} />
             <ControlGroup label="Moving Circle" value={innerRadius} min={5} max={380} onChange={setInnerRadius} />
+            
+            {/* --- Speed Slider Addition --- */}
+            <ControlGroup label="Drawing Speed" value={speed} min={0.01} max={0.4} step={0.01} onChange={setSpeed} />
             
             <div className="flex flex-col gap-3">
               <label className="text-xs font-bold uppercase tracking-widest text-stone-600">Track Type</label>
@@ -232,7 +236,6 @@ const SpirographStudio = () => {
   );
 };
 
-// Larger labels and inputs
 const ControlGroup = ({ label, value, min, max, step = 1, onChange }) => (
   <div className="flex flex-col gap-3">
     <div className="flex justify-between items-center">
@@ -240,6 +243,7 @@ const ControlGroup = ({ label, value, min, max, step = 1, onChange }) => (
       <input 
         type="number" 
         value={value} 
+        step={step}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
         className="w-16 bg-white border-2 border-stone-300 rounded-md p-1.5 text-sm font-mono text-center focus:outline-none focus:border-stone-800 text-stone-900 shadow-sm"
       />
