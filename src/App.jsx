@@ -63,8 +63,6 @@ const FinleySpiralStudio = () => {
     // Moving Gear
     overlayCtx.beginPath();
     overlayCtx.arc(cx, cy, innerRadius, 0, Math.PI * 2);
-    overlayCtx.fillStyle = 'rgba(245, 158, 11, 0.2)';
-    overlayCtx.fill();
     overlayCtx.strokeStyle = COLORS.gear;
     overlayCtx.lineWidth = 4;
     overlayCtx.stroke();
