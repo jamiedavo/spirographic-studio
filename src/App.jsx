@@ -3,9 +3,9 @@ import { Play, Pause, Trash2, Download, Settings2, PenTool, Infinity } from 'luc
 
 const CANVAS_SIZE = 800;
 const COLORS = {
-  paper: '#fffff2', 
-  track: '#D3D3D3', 
-  gear: '#FFF1A3',  
+  paper: '#ffffff', 
+  track: '#475569', 
+  gear: '#f59e0b',  
 };
 
 const gcd = (a, b) => b ? gcd(b, a % b) : a;
@@ -41,11 +41,8 @@ const FinleySpiralStudio = () => {
   const drawGuides = useCallback(() => {
     const overlayCtx = overlayCanvasRef.current?.getContext('2d');
     if (!overlayCtx) return;
-    
-    // Always clear the overlay canvas (where the gears live)
     overlayCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     
-    // Only draw the gears if we are NOT finished and guides are ON
     if (!showGuides || angleRef.current >= getTargetAngle()) return;
 
     const centerX = CANVAS_SIZE / 2;
@@ -56,37 +53,36 @@ const FinleySpiralStudio = () => {
     const cy = centerY + d * Math.sin(angle);
     const rotation = isEpicycloid ? (angle * (outerRadius / innerRadius)) : -(angle * (outerRadius / innerRadius));
 
-    // BIG TRACK
+    // Big Track
     overlayCtx.beginPath();
     overlayCtx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
     overlayCtx.strokeStyle = COLORS.track;
-    overlayCtx.lineWidth = 3;
+    overlayCtx.lineWidth = 10;
     overlayCtx.stroke();
 
-    // MOVING GEAR
+    // Moving Gear
     overlayCtx.beginPath();
     overlayCtx.arc(cx, cy, innerRadius, 0, Math.PI * 2);
     overlayCtx.fillStyle = 'rgba(245, 158, 11, 0.2)';
     overlayCtx.fill();
     overlayCtx.strokeStyle = COLORS.gear;
-    overlayCtx.lineWidth = 3;
+    overlayCtx.lineWidth = 5;
     overlayCtx.stroke();
 
-    // SPOKES
+    // Spokes
     for (let i = 0; i < 4; i++) {
       const spokeAngle = rotation + (i * Math.PI / 2);
       overlayCtx.beginPath();
       overlayCtx.moveTo(cx, cy);
       overlayCtx.lineTo(cx + innerRadius * Math.cos(spokeAngle), cy + innerRadius * Math.sin(spokeAngle));
       overlayCtx.strokeStyle = COLORS.gear;
-      overlayCtx.lineWidth = 2;
+      overlayCtx.lineWidth = 3;
       overlayCtx.stroke();
     }
   }, [showGuides, outerRadius, innerRadius, isEpicycloid, getTargetAngle]);
 
   useEffect(() => {
     const ctx = mainCanvasRef.current.getContext('2d');
-    // Only fill the background once at the very start
     if (angleRef.current === 0) {
       ctx.fillStyle = COLORS.paper;
       ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -96,34 +92,28 @@ const FinleySpiralStudio = () => {
 
   const animate = useCallback(() => {
     if (!isPlaying) return;
-    
     const target = getTargetAngle();
-    
-    // Stop precisely when target is reached
     if (angleRef.current >= target) {
       setIsPlaying(false);
-      drawGuides(); // This will clear the gears because angle >= target
+      drawGuides(); 
       return;
     }
 
     const mainCtx = mainCanvasRef.current.getContext('2d');
     const steps = 15; 
-    
     for (let s = 0; s < steps; s++) {
       if (angleRef.current >= target) break;
-      
       const prevAngle = angleRef.current;
       angleRef.current += speed / steps;
       const currentAngle = angleRef.current;
       const d = isEpicycloid ? outerRadius + innerRadius : outerRadius - innerRadius;
-
       pens.forEach((pen) => {
         if (!pen.active) return;
         const getPos = (a) => {
-          const rotation = isEpicycloid ? (a * (outerRadius / innerRadius)) : -(a * (outerRadius / innerRadius));
+          const rot = isEpicycloid ? (a * (outerRadius / innerRadius)) : -(a * (outerRadius / innerRadius));
           return {
-            x: CANVAS_SIZE / 2 + d * Math.cos(a) + (innerRadius * pen.offset) * Math.cos(rotation),
-            y: CANVAS_SIZE / 2 + d * Math.sin(a) + (innerRadius * pen.offset) * Math.sin(rotation)
+            x: CANVAS_SIZE / 2 + d * Math.cos(a) + (innerRadius * pen.offset) * Math.cos(rot),
+            y: CANVAS_SIZE / 2 + d * Math.sin(a) + (innerRadius * pen.offset) * Math.sin(rot)
           };
         };
         const p1 = getPos(prevAngle);
@@ -160,24 +150,22 @@ const FinleySpiralStudio = () => {
       <aside className="w-80 h-full bg-white border-r-4 border-yellow-400 shadow-2xl p-6 flex flex-col gap-6 z-10 overflow-y-auto">
         <header className="bg-yellow-400 -m-6 mb-2 p-6">
           <h1 className="text-2xl font-black tracking-tight text-white uppercase flex items-center gap-2">
-            <Infinity size={20} fill="white" /> Finley's Studio
+            <Infinity size={28} strokeWidth={3} /> Finley's Studio
           </h1>
-          <p className="text-blue-800 font-bold text-[10px] mt-1 tracking-widest uppercase">Try and make a fun colourful pattern<p>
+          <p className="text-blue-800 font-bold text-[10px] mt-1 tracking-widest uppercase">
+            Try and make a fun colourful pattern
+          </p>
         </header>
 
         <section className="space-y-4">
-          <h2 className="text-blue-500 font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
-            Settings
-          </h2>
+          <h2 className="text-blue-500 font-black text-[10px] uppercase tracking-widest flex items-center gap-2">Settings</h2>
           <ControlGroup label="Big Circle" value={outerRadius} min={10} max={380} color="bg-red-400" onChange={setOuterRadius} />
           <ControlGroup label="Small Gear" value={innerRadius} min={5} max={380} color="bg-blue-400" onChange={setInnerRadius} />
           <ControlGroup label="Speed" value={speed} min={0.01} max={1.5} step={0.01} color="bg-green-400" onChange={setSpeed} />
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-blue-500 font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
-            Pens
-          </h2>
+          <h2 className="text-blue-500 font-black text-[10px] uppercase tracking-widest flex items-center gap-2">Pens</h2>
           {pens.map((pen, idx) => (
             <div key={pen.id} className={`p-3 rounded-xl border-4 transition-all ${pen.active ? 'bg-white border-yellow-400 shadow-md' : 'opacity-40 border-slate-100'}`}>
               <div className="flex justify-between items-center mb-1">
@@ -191,19 +179,13 @@ const FinleySpiralStudio = () => {
               {pen.active && (
                 <div className="space-y-2">
                   <ControlGroup label="Wobble" value={pen.offset} min={0} max={3} step={0.01} color="bg-slate-300" onChange={(v) => {
-                    const newPens = [...pens];
-                    newPens[idx].offset = v;
-                    setPens(newPens);
+                    const n = [...pens]; n[idx].offset = v; setPens(n);
                   }} />
                   <ControlGroup label="Fatness" value={pen.width} min={0.1} max={15} step={0.1} color="bg-slate-300" onChange={(v) => {
-                    const newPens = [...pens];
-                    newPens[idx].width = v;
-                    setPens(newPens);
+                    const n = [...pens]; n[idx].width = v; setPens(n);
                   }} />
                   <input type="color" value={pen.color} className="w-full h-8 rounded-lg cursor-pointer border-2 border-slate-200" onChange={(e) => {
-                    const newPens = [...pens];
-                    newPens[idx].color = e.target.value;
-                    setPens(newPens);
+                    const n = [...pens]; n[idx].color = e.target.value; setPens(n);
                   }} />
                 </div>
               )}
@@ -245,11 +227,7 @@ const ControlGroup = ({ label, value, min, max, step = 1, color, onChange }) => 
       <span>{label}</span>
       <span className="text-slate-800">{value}</span>
     </div>
-    <input 
-      type="range" min={min} max={max} step={step} value={value} 
-      onChange={(e) => onChange(parseFloat(e.target.value))} 
-      className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer ${color}`} 
-    />
+    <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(parseFloat(e.target.value))} className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer ${color}`} />
   </div>
 );
 
