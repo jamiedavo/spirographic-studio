@@ -3,8 +3,8 @@ import { Play, Pause, Trash2, Download, Settings2, PenTool, Sparkles } from 'luc
 
 const CANVAS_SIZE = 800;
 const COLORS = {
-  paper: '#ffffff', 
-  track: '#475569', 
+  paper: '#fffff2', 
+  track: '#D3D3D3', 
   gear: '#f59e0b',  
 };
 
