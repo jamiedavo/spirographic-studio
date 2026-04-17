@@ -4,8 +4,8 @@ import { Play, Pause, Trash2, Download, Settings2, PenTool, Infinity } from 'luc
 const CANVAS_SIZE = 800;
 const COLORS = {
   paper: '#ffffff', 
-  track: '#475569', 
-  gear: '#f59e0b',  
+  track: '#d3d3d3', 
+  gear: '#f8f87c',  
 };
 
 const gcd = (a, b) => b ? gcd(b, a % b) : a;
@@ -57,7 +57,7 @@ const FinleySpiralStudio = () => {
     overlayCtx.beginPath();
     overlayCtx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
     overlayCtx.strokeStyle = COLORS.track;
-    overlayCtx.lineWidth = 10;
+    overlayCtx.lineWidth = 3;
     overlayCtx.stroke();
 
     // Moving Gear
@@ -66,7 +66,7 @@ const FinleySpiralStudio = () => {
     overlayCtx.fillStyle = 'rgba(245, 158, 11, 0.2)';
     overlayCtx.fill();
     overlayCtx.strokeStyle = COLORS.gear;
-    overlayCtx.lineWidth = 5;
+    overlayCtx.lineWidth = 4;
     overlayCtx.stroke();
 
     // Spokes
