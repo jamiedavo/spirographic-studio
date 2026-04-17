@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, Trash2, Download, Settings2, PenTool, Sparkles } from 'lucide-react';
+import { Play, Pause, Trash2, Download, Settings2, PenTool, Infinity } from 'lucide-react';
 
 const CANVAS_SIZE = 800;
 const COLORS = {
@@ -160,9 +160,9 @@ const FinleySpiralStudio = () => {
       <aside className="w-80 h-full bg-white border-r-4 border-yellow-400 shadow-2xl p-6 flex flex-col gap-6 z-10 overflow-y-auto">
         <header className="bg-yellow-400 -m-6 mb-2 p-6">
           <h1 className="text-2xl font-black tracking-tight text-white uppercase flex items-center gap-2">
-            <Sparkles size={20} fill="white" /> Finley's Studio
+            <Infinity size={20} fill="white" /> Finley's Studio
           </h1>
-          <p className="text-blue-800 font-bold text-[10px] mt-1 tracking-widest uppercase">Mum's Geometry Fun</p>
+          <p className="text-blue-800 font-bold text-[10px] mt-1 tracking-widest uppercase">Try and make a fun colourful pattern<p>
         </header>
 
         <section className="space-y-4">
