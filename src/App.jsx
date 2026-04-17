@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, Square, Trash2, Download, Layers, Settings2, PenTool } from 'lucide-react';
+import { Play, Pause, Square, Trash2, Download, Layers, Settings2, PenTool, Eye, EyeOff } from 'lucide-react';
 
 // --- Constants & Styles ---
 const CANVAS_SIZE = 800;
 const COLORS = {
-  paper: '#fdfaf5', // Bone / Parchment
+  paper: '#fdfaf5', 
   grid: '#e8e2d8',
   graphite: '#2c2c2c',
   brass: '#b5a48b',
@@ -13,7 +13,6 @@ const COLORS = {
   guideFull: 'rgba(181, 164, 139, 0.4)',
 };
 
-// --- Main Component ---
 const SpirographStudio = () => {
   // State: Mechanism
   const [outerRadius, setOuterRadius] = useState(250);
@@ -21,104 +20,106 @@ const SpirographStudio = () => {
   const [isEpicycloid, setIsEpicycloid] = useState(false);
   const [speed, setSpeed] = useState(0.05);
 
-  // State: Pens (Up to 3)
+  // State: Pens
   const [pens, setPens] = useState([
     { id: 1, offset: 0.7, color: '#2c2c2c', active: true, width: 1.2 },
     { id: 2, offset: 0.4, color: '#4a5568', active: false, width: 1.0 },
     { id: 3, offset: 0.9, color: '#b5a48b', active: false, width: 1.5 },
   ]);
 
-  // State: View
-  const [guideMode, setGuideMode] = useState('mechanism'); // 'off', 'minimal', 'mechanism', 'full'
+  // State: View (Simplified to On/Off, Default ON)
+  const [showGuides, setShowGuides] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   
-  // Refs for Animation & Drawing
   const mainCanvasRef = useRef(null);
   const overlayCanvasRef = useRef(null);
   const requestRef = useRef();
   const angleRef = useRef(0);
-  const lastPosRef = useRef([]); // Stores last pen positions for line continuity
 
-  // --- Logic: Drawing & Animation ---
+  // --- Logic: Drawing the Mechanical Overlay ---
   
-  const drawGuides = useCallback((ctx, state) => {
-    const { angle, outerR, innerR, isEpi, pens } = state;
+  const drawGuides = useCallback(() => {
+    const overlayCtx = overlayCanvasRef.current?.getContext('2d');
+    if (!overlayCtx) return;
+
+    overlayCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    
+    // If guides are off, we stop here
+    if (!showGuides) return;
+
     const centerX = CANVAS_SIZE / 2;
     const centerY = CANVAS_SIZE / 2;
+    const angle = angleRef.current;
 
     // Calculate moving circle center
-    const d = isEpi ? outerR + innerR : outerR - innerR;
+    const d = isEpicycloid ? outerRadius + innerRadius : outerRadius - innerRadius;
     const cx = centerX + d * Math.cos(angle);
     const cy = centerY + d * Math.sin(angle);
     
     // Calculate rotation of the inner wheel
-    const rotation = isEpi ? (angle * (outerR / innerR)) : -(angle * (outerR / innerR));
+    const rotation = isEpicycloid ? (angle * (outerRadius / innerRadius)) : -(angle * (outerRadius / innerRadius));
 
-    ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    if (guideMode === 'off') return;
+    // 1. Base Ring (The fixed track)
+    overlayCtx.beginPath();
+    overlayCtx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
+    overlayCtx.strokeStyle = COLORS.guideMed;
+    overlayCtx.setLineDash([5, 5]);
+    overlayCtx.stroke();
+    overlayCtx.setLineDash([]);
 
-    // 1. Base Ring (Minimal +)
-    if (guideMode !== 'minimal') {
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, outerR, 0, Math.PI * 2);
-      ctx.strokeStyle = COLORS.guideMed;
-      ctx.setLineDash([5, 5]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
+    // 2. Moving Wheel (The gear)
+    overlayCtx.beginPath();
+    overlayCtx.arc(cx, cy, innerRadius, 0, Math.PI * 2);
+    overlayCtx.strokeStyle = COLORS.brass;
+    overlayCtx.lineWidth = 1.5;
+    overlayCtx.stroke();
 
-    // 2. Moving Wheel (Minimal +)
-    ctx.beginPath();
-    ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
-    ctx.strokeStyle = guideMode === 'full' ? COLORS.brass : COLORS.guideMed;
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    // 3. Mechanical Detail: Rotation marker & Spoke
+    overlayCtx.beginPath();
+    overlayCtx.moveTo(cx, cy);
+    overlayCtx.lineTo(cx + innerRadius * Math.cos(rotation), cy + innerRadius * Math.sin(rotation));
+    overlayCtx.strokeStyle = COLORS.brass;
+    overlayCtx.stroke();
+    
+    overlayCtx.beginPath();
+    overlayCtx.arc(cx, cy, 4, 0, Math.PI * 2);
+    overlayCtx.fillStyle = COLORS.brass;
+    overlayCtx.fill();
 
-    // 3. Spokes and Teeth (Full only)
-    if (guideMode === 'full') {
-      // Rotation marker
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + innerR * Math.cos(rotation), cy + innerR * Math.sin(rotation));
-      ctx.strokeStyle = COLORS.brass;
-      ctx.stroke();
-      
-      // Center point
-      ctx.beginPath();
-      ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-      ctx.fillStyle = COLORS.brass;
-      ctx.fill();
-    }
-
-    // 4. Pen Arms & Positions
+    // 4. Pen Positions
     pens.forEach(pen => {
       if (!pen.active) return;
-      const px = cx + (innerR * pen.offset) * Math.cos(rotation);
-      const py = cy + (innerR * pen.offset) * Math.sin(rotation);
+      const px = cx + (innerRadius * pen.offset) * Math.cos(rotation);
+      const py = cy + (innerRadius * pen.offset) * Math.sin(rotation);
 
-      if (guideMode !== 'minimal') {
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(px, py);
-        ctx.strokeStyle = COLORS.guideLight;
-        ctx.stroke();
-      }
+      // Arm from center to pen
+      overlayCtx.beginPath();
+      overlayCtx.moveTo(cx, cy);
+      overlayCtx.lineTo(px, py);
+      overlayCtx.strokeStyle = 'rgba(181, 164, 139, 0.2)';
+      overlayCtx.stroke();
 
       // The Pen Nib
-      ctx.beginPath();
-      ctx.arc(px, py, 3, 0, Math.PI * 2);
-      ctx.fillStyle = pen.color;
-      ctx.fill();
+      overlayCtx.beginPath();
+      overlayCtx.arc(px, py, 4, 0, Math.PI * 2);
+      overlayCtx.fillStyle = pen.color;
+      overlayCtx.fill();
+      overlayCtx.strokeStyle = 'white';
+      overlayCtx.lineWidth = 1;
+      overlayCtx.stroke();
     });
-  }, [guideMode]);
+  }, [showGuides, outerRadius, innerRadius, isEpicycloid, pens]);
+
+  // Update guides whenever parameters change (even if paused)
+  useEffect(() => {
+    drawGuides();
+  }, [drawGuides, outerRadius, innerRadius, isEpicycloid, pens, showGuides]);
 
   const animate = useCallback(() => {
     if (!isPlaying) return;
 
     const mainCtx = mainCanvasRef.current.getContext('2d');
-    const overlayCtx = overlayCanvasRef.current.getContext('2d');
     
-    // Steps per frame for smoothness
     const steps = 5; 
     for (let s = 0; s < steps; s++) {
       const prevAngle = angleRef.current;
@@ -127,7 +128,7 @@ const SpirographStudio = () => {
 
       const d = isEpicycloid ? outerRadius + innerRadius : outerRadius - innerRadius;
 
-      pens.forEach((pen, i) => {
+      pens.forEach((pen) => {
         if (!pen.active) return;
 
         const getPos = (a) => {
@@ -151,37 +152,30 @@ const SpirographStudio = () => {
       });
     }
 
-    drawGuides(overlayCtx, {
-      angle: angleRef.current,
-      outerR: outerRadius,
-      innerR: innerRadius,
-      isEpi: isEpicycloid,
-      pens
-    });
-
+    drawGuides();
     requestRef.current = requestAnimationFrame(animate);
   }, [isPlaying, outerRadius, innerRadius, isEpicycloid, speed, pens, drawGuides]);
 
   useEffect(() => {
-    requestRef.current = requestAnimationFrame(animate);
+    if (isPlaying) {
+      requestRef.current = requestAnimationFrame(animate);
+    }
     return () => cancelAnimationFrame(requestRef.current);
-  }, [animate]);
+  }, [isPlaying, animate]);
 
-  // Initial Canvas Setup
   useEffect(() => {
     const ctx = mainCanvasRef.current.getContext('2d');
-    ctx.lineJoin = 'round';
-    // Clear to paper color
     ctx.fillStyle = COLORS.paper;
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    drawGuides(); // Initial draw on mount
   }, []);
 
-  // --- Handlers ---
   const handleClear = () => {
     const ctx = mainCanvasRef.current.getContext('2d');
     ctx.fillStyle = COLORS.paper;
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     angleRef.current = 0;
+    drawGuides(); // Ensure guides are redrawn immediately
   };
 
   const downloadImage = () => {
@@ -194,14 +188,12 @@ const SpirographStudio = () => {
   return (
     <div className="flex h-screen w-full overflow-hidden font-sans text-slate-800" style={{ backgroundColor: '#f0ede9' }}>
       
-      {/* --- Left Control Panel --- */}
       <aside className="w-80 h-full border-r border-stone-300 bg-stone-50/50 backdrop-blur-md overflow-y-auto p-6 flex flex-col gap-8 shadow-xl z-10">
         <header>
           <h1 className="text-xl font-light tracking-widest uppercase text-stone-500">Spirograph Studio</h1>
           <div className="h-px w-12 bg-stone-400 mt-2"></div>
         </header>
 
-        {/* Mechanism Section */}
         <section className="flex flex-col gap-4">
           <div className="flex items-center gap-2 text-stone-400">
             <Settings2 size={16} />
@@ -217,30 +209,30 @@ const SpirographStudio = () => {
               <div className="flex p-1 bg-stone-200/50 rounded-md">
                 <button 
                   onClick={() => setIsEpicycloid(false)}
-                  className={`flex-1 py-1 text-xs rounded ${!isEpicycloid ? 'bg-white shadow-sm' : 'text-stone-500'}`}
+                  className={`flex-1 py-1 text-xs rounded transition-all ${!isEpicycloid ? 'bg-white shadow-sm font-bold' : 'text-stone-500'}`}
                 >Inside</button>
                 <button 
                   onClick={() => setIsEpicycloid(true)}
-                  className={`flex-1 py-1 text-xs rounded ${isEpicycloid ? 'bg-white shadow-sm' : 'text-stone-500'}`}
+                  className={`flex-1 py-1 text-xs rounded transition-all ${isEpicycloid ? 'bg-white shadow-sm font-bold' : 'text-stone-500'}`}
                 >Outside</button>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Pens Section */}
         <section className="flex flex-col gap-4">
           <div className="flex items-center gap-2 text-stone-400">
             <PenTool size={16} />
             <h2 className="text-xs font-bold uppercase tracking-tighter">Active Pens</h2>
           </div>
           {pens.map((pen, idx) => (
-            <div key={pen.id} className={`p-3 rounded-lg border ${pen.active ? 'border-stone-300 bg-white' : 'border-transparent opacity-50'}`}>
+            <div key={pen.id} className={`p-3 rounded-lg border transition-all ${pen.active ? 'border-stone-300 bg-white' : 'border-transparent opacity-40'}`}>
               <div className="flex justify-between items-center mb-2">
                 <span className="text-xs font-medium text-stone-500">Pen {idx + 1}</span>
                 <input 
                   type="checkbox" 
                   checked={pen.active} 
+                  className="accent-stone-500"
                   onChange={(e) => {
                     const newPens = [...pens];
                     newPens[idx].active = e.target.checked;
@@ -265,7 +257,7 @@ const SpirographStudio = () => {
                     <input 
                       type="color" 
                       value={pen.color} 
-                      className="w-6 h-6 border-none bg-transparent"
+                      className="w-6 h-6 cursor-pointer border-none bg-transparent"
                       onChange={(e) => {
                         const newPens = [...pens];
                         newPens[idx].color = e.target.value;
@@ -279,55 +271,30 @@ const SpirographStudio = () => {
           ))}
         </section>
 
-        {/* Visibility Section */}
-        <section className="flex flex-col gap-4">
-          <div className="flex items-center gap-2 text-stone-400">
-            <Layers size={16} />
-            <h2 className="text-xs font-bold uppercase tracking-tighter">Guide Visibility</h2>
-          </div>
-          <select 
-            value={guideMode} 
-            onChange={(e) => setGuideMode(e.target.value)}
-            className="text-xs p-2 bg-white border border-stone-300 rounded"
+        <section className="mt-auto border-t border-stone-200 pt-6">
+          <button 
+            onClick={() => setShowGuides(!showGuides)}
+            className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${showGuides ? 'bg-stone-800 text-white' : 'bg-white border border-stone-300 text-stone-500'}`}
           >
-            <option value="off">Off (Artwork Only)</option>
-            <option value="minimal">Minimal</option>
-            <option value="mechanism">Mechanism</option>
-            <option value="full">Full Theatre</option>
-          </select>
+            {showGuides ? <Eye size={16} /> : <EyeOff size={16} />}
+            Guides {showGuides ? 'On' : 'Off'}
+          </button>
         </section>
       </aside>
 
-      {/* --- Central Canvas Area --- */}
       <main className="flex-1 relative flex items-center justify-center p-8">
         <div className="relative shadow-2xl rounded-sm overflow-hidden bg-white border-[12px] border-white">
-          {/* Subtle Grid Overlay */}
           <div 
             className="absolute inset-0 pointer-events-none opacity-20"
             style={{ backgroundImage: `radial-gradient(${COLORS.grid} 1px, transparent 0)`, backgroundSize: '24px 24px' }}
           ></div>
           
-          <canvas 
-            ref={mainCanvasRef} 
-            width={CANVAS_SIZE} 
-            height={CANVAS_SIZE} 
-            className="block"
-          />
-          <canvas 
-            ref={overlayCanvasRef} 
-            width={CANVAS_SIZE} 
-            height={CANVAS_SIZE} 
-            className="absolute top-0 left-0 pointer-events-none"
-          />
+          <canvas ref={mainCanvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} className="block" />
+          <canvas ref={overlayCanvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} className="absolute top-0 left-0 pointer-events-none" />
         </div>
 
-        {/* Bottom Control Dock */}
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-6 px-8 py-4 bg-stone-900 text-white rounded-full shadow-2xl transition-all hover:scale-[1.02]">
-          <button 
-            onClick={handleClear}
-            className="p-2 hover:text-red-400 transition-colors"
-            title="Reset Canvas"
-          >
+          <button onClick={handleClear} className="p-2 hover:text-red-400 transition-colors" title="Reset Canvas">
             <Trash2 size={20} />
           </button>
           
@@ -342,11 +309,7 @@ const SpirographStudio = () => {
 
           <div className="w-px h-6 bg-stone-700 mx-2"></div>
 
-          <button 
-            onClick={downloadImage}
-            className="p-2 hover:text-brass transition-colors"
-            title="Export Artwork"
-          >
+          <button onClick={downloadImage} className="p-2 hover:text-brass transition-colors" title="Export Artwork">
             <Download size={20} />
           </button>
         </div>
@@ -354,8 +317,6 @@ const SpirographStudio = () => {
     </div>
   );
 };
-
-// --- Helper Components ---
 
 const ControlGroup = ({ label, value, min, max, step = 1, onChange }) => (
   <div className="flex flex-col gap-2">
