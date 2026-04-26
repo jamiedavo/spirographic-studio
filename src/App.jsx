@@ -323,6 +323,22 @@ export default function SpirographStudio() {
                       setPens(next);
                     }}
                   />
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-between text-[9px] font-bold uppercase text-stone-400">
+                      <span>Ink</span>
+                      <span>{pen.color}</span>
+                    </div>
+                    <input
+                      type="color"
+                      value={pen.color}
+                      onChange={(e) => {
+                        const next = [...pens];
+                        next[idx].color = e.target.value;
+                        setPens(next);
+                      }}
+                      className="h-8 w-full cursor-pointer rounded border border-stone-300 bg-white p-1"
+                    />
+                  </div>
                 </div>
               )}
             </div>
