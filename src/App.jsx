@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, Trash2, Download } from 'lucide-react';
+import { Play, Pause, RotateCcw, Trash2, Download } from 'lucide-react';
 
 const CANVAS_SIZE = 800;
 
@@ -220,6 +220,11 @@ export default function SpirographStudio() {
     drawGuides();
   };
 
+  const clearDrawing = () => {
+    clearMainCanvas();
+    drawGuides();
+  };
+
   const downloadPNG = () => {
     if (!mainCanvasRef.current) return;
     const link = document.createElement('a');
@@ -232,6 +237,33 @@ export default function SpirographStudio() {
     <div className="flex h-screen w-full bg-stone-200 font-sans text-stone-900 overflow-hidden">
       <aside className="w-80 h-full bg-stone-100 border-r border-stone-400 p-6 flex flex-col gap-8 overflow-y-auto">
         <h1 className="text-xl font-bold uppercase tracking-tighter">Spiro.Math</h1>
+
+        <section className="space-y-3">
+          <span className="text-[10px] font-bold uppercase text-stone-500">Playback</span>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setIsPlaying((v) => !v)}
+              className="col-span-2 flex items-center justify-center gap-2 py-2.5 bg-stone-800 text-white text-xs font-bold uppercase rounded-md tracking-wider"
+            >
+              {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+              {isPlaying ? 'Pause' : 'Start'}
+            </button>
+            <button
+              onClick={resetDrawing}
+              className="flex items-center justify-center gap-1.5 py-2 border border-stone-400 bg-white text-stone-800 text-xs font-bold uppercase rounded-md tracking-wider"
+            >
+              <RotateCcw size={14} />
+              Reset
+            </button>
+            <button
+              onClick={clearDrawing}
+              className="flex items-center justify-center gap-1.5 py-2 border border-stone-400 bg-white text-stone-800 text-xs font-bold uppercase rounded-md tracking-wider"
+            >
+              <Trash2 size={14} />
+              Clear
+            </button>
+          </div>
+        </section>
 
         <section className="space-y-6">
           <ControlGroup
@@ -323,6 +355,22 @@ export default function SpirographStudio() {
                       setPens(next);
                     }}
                   />
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-between text-[9px] font-bold uppercase text-stone-400">
+                      <span>Ink</span>
+                      <span>{pen.color}</span>
+                    </div>
+                    <input
+                      type="color"
+                      value={pen.color}
+                      onChange={(e) => {
+                        const next = [...pens];
+                        next[idx].color = e.target.value;
+                        setPens(next);
+                      }}
+                      className="h-8 w-full cursor-pointer rounded border border-stone-300 bg-white p-1"
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -353,24 +401,13 @@ export default function SpirographStudio() {
           />
         </div>
 
-        <div className="mt-8 flex items-center gap-8 bg-stone-900 px-6 py-3 rounded-full text-white">
-          <button onClick={resetDrawing}>
-            <Trash2 size={20} />
-          </button>
-
+        <div className="mt-8 flex items-center justify-center">
           <button
-            onClick={() => setIsPlaying((v) => !v)}
-            className="w-12 h-12 bg-white text-stone-900 rounded-full flex items-center justify-center"
+            onClick={downloadPNG}
+            className="flex items-center gap-2 bg-stone-900 px-4 py-2 rounded-full text-white text-xs font-bold uppercase tracking-wider"
           >
-            {isPlaying ? (
-              <Pause size={24} fill="currentColor" />
-            ) : (
-              <Play size={24} className="ml-1" fill="currentColor" />
-            )}
-          </button>
-
-          <button onClick={downloadPNG}>
-            <Download size={20} />
+            <Download size={16} />
+            Export PNG
           </button>
         </div>
       </main>
