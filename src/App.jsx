@@ -146,11 +146,19 @@ export default function App() {
 
   // ─── Math helpers ───────────────────────────────────────────────
 
-  const getTargetAngle = useCallback(() => {
-    const r1 = Math.round(outerRadius), r2 = Math.round(innerRadius), r3 = Math.round(satelliteRadius);
-    const common = gcd(r1, gcd(r2, r3)) || 1;
-    return Math.min((r2 * r3 / common) * Math.PI * 0.5, Math.PI * 250);
-  }, [outerRadius, innerRadius, satelliteRadius]);
+  const MAX_DRAW_ROTATIONS = 10;
+
+const getTargetAngle = useCallback(() => {
+  const r1 = Math.round(outerRadius);
+  const r2 = Math.round(innerRadius);
+  const r3 = Math.round(satelliteRadius);
+
+  const common = gcd(r1, gcd(r2, r3)) || 1;
+  const mathematicalTarget = (r2 * r3 / common) * Math.PI * 0.5;
+  const visualTarget = Math.PI * 2 * MAX_DRAW_ROTATIONS;
+
+  return Math.min(mathematicalTarget, visualTarget);
+}, [outerRadius, innerRadius, satelliteRadius]);
 
   // Returns gear hub positions for a given drive angle
   const getGearPositions = useCallback((angle) => {
