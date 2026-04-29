@@ -146,7 +146,7 @@ export default function App() {
 
   // ─── Math helpers ───────────────────────────────────────────────
 
-  const MAX_DRAW_ROTATIONS = 10;
+  const MAX_DRAW_ROTATIONS = 30;
 
 const getTargetAngle = useCallback(() => {
   const r1 = Math.round(outerRadius);
