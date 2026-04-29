@@ -245,9 +245,9 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-neutral-950 text-neutral-200 overflow-hidden font-sans">
-      <aside className="w-80 h-full bg-neutral-900 border-r border-white/5 flex flex-col z-20 shadow-2xl shrink-0">
-        <div className="p-6 border-b border-white/5 flex items-center justify-between">
+    <div className="flex h-[100dvh] w-full bg-neutral-950 text-neutral-200 overflow-hidden font-sans flex-col md:flex-row">
+      <aside className="order-2 md:order-1 w-full md:w-80 h-[46dvh] md:h-full bg-neutral-900 border-t md:border-t-0 md:border-r border-white/5 flex flex-col z-20 shadow-2xl shrink-0">
+        <div className="px-5 py-3 md:p-6 border-b border-white/5 flex items-center justify-between">
           <h1 className="text-xs font-black tracking-[0.2em] text-white flex items-center gap-2">
             <Settings2 size={16} className="text-indigo-400" />
             ENGINE<span className="text-neutral-600">.V3</span>
@@ -255,20 +255,20 @@ export default function App() {
         </div>
 
         <div className="flex border-b border-white/5">
-          <button onClick={() => setActivePanel('gears')} className={`flex-1 py-3 text-[10px] font-bold uppercase transition-colors flex flex-col items-center gap-1 ${activePanel === 'gears' ? 'text-indigo-400' : 'text-neutral-500'}`}>
+          <button onClick={() => setActivePanel('gears')} className={`flex-1 py-2.5 md:py-3 text-[10px] font-bold uppercase transition-colors flex flex-col items-center gap-1 ${activePanel === 'gears' ? 'text-indigo-400' : 'text-neutral-500'}`}>
             <RotateCw size={14} /> Gears
           </button>
-          <button onClick={() => setActivePanel('pens')} className={`flex-1 py-3 text-[10px] font-bold uppercase transition-colors flex flex-col items-center gap-1 ${activePanel === 'pens' ? 'text-indigo-400' : 'text-neutral-500'}`}>
+          <button onClick={() => setActivePanel('pens')} className={`flex-1 py-2.5 md:py-3 text-[10px] font-bold uppercase transition-colors flex flex-col items-center gap-1 ${activePanel === 'pens' ? 'text-indigo-400' : 'text-neutral-500'}`}>
             <PenTool size={14} /> Pens
           </button>
-          <button onClick={() => setActivePanel('presets')} className={`flex-1 py-3 text-[10px] font-bold uppercase transition-colors flex flex-col items-center gap-1 ${activePanel === 'presets' ? 'text-indigo-400' : 'text-neutral-500'}`}>
+          <button onClick={() => setActivePanel('presets')} className={`flex-1 py-2.5 md:py-3 text-[10px] font-bold uppercase transition-colors flex flex-col items-center gap-1 ${activePanel === 'presets' ? 'text-indigo-400' : 'text-neutral-500'}`}>
             <Bookmark size={14} /> Vault
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 md:p-6 space-y-5 md:space-y-6 scrollbar-hide">
           {activePanel === 'gears' && (
-            <div className="space-y-6">
+            <div className="space-y-5 md:space-y-6">
               <div className="flex bg-black/40 p-1 rounded-lg">
                 <button onClick={() => setIsEpicycloid(false)} className={`flex-1 py-2 text-[9px] font-black uppercase rounded ${!isEpicycloid ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-500'}`}>Hypo</button>
                 <button onClick={() => setIsEpicycloid(true)} className={`flex-1 py-2 text-[9px] font-black uppercase rounded ${isEpicycloid ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-500'}`}>Epi</button>
@@ -322,7 +322,7 @@ export default function App() {
           )}
         </div>
 
-        <div className="p-6 bg-black/20 border-t border-white/5 space-y-2">
+        <div className="p-4 md:p-6 bg-black/20 border-t border-white/5 space-y-2">
           <button onClick={() => setIsPlaying(!isPlaying)} className={`w-full py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${isPlaying ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-indigo-600 text-white shadow-xl hover:bg-indigo-500'}`}>
             {isPlaying ? 'PAUSE' : 'ENGAGE'}
           </button>
@@ -333,29 +333,29 @@ export default function App() {
         </div>
       </aside>
 
-      <main className="flex-1 relative flex flex-col items-center justify-center p-8" style={{ backgroundColor: activeTheme.bg }}>
+      <main className="order-1 md:order-2 flex-1 min-h-0 relative flex flex-col items-center justify-center p-4 md:p-8" style={{ backgroundColor: activeTheme.bg }}>
         {activeTheme.grid && (
           <div className="absolute inset-0 pointer-events-none opacity-40" 
             style={{ backgroundImage: `linear-gradient(${activeTheme.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${activeTheme.gridColor} 1px, transparent 1px)`, backgroundSize: `${activeTheme.spacing}px ${activeTheme.spacing}px` }}
           />
         )}
 
-        <div className="absolute top-8 right-8 flex items-center gap-4 z-10 scale-90 md:scale-100">
+        <div className="absolute top-3 right-3 left-3 md:top-8 md:right-8 md:left-auto flex items-center justify-end gap-2 md:gap-4 z-10 scale-90 md:scale-100 origin-top-right">
           <div className="flex bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-full p-1 shadow-2xl">
             {BG_THEMES.map(t => (
-              <button key={t.id} onClick={() => setThemeId(t.id)} className={`w-8 h-8 rounded-full transition-all ${themeId === t.id ? 'scale-110 ring-2 ring-indigo-500 ring-offset-2 ring-offset-neutral-900' : 'opacity-40 hover:opacity-100'}`} style={{ background: t.bg }} />
+              <button key={t.id} onClick={() => setThemeId(t.id)} className={`w-7 h-7 md:w-8 md:h-8 rounded-full transition-all ${themeId === t.id ? 'scale-110 ring-2 ring-indigo-500 ring-offset-2 ring-offset-neutral-900' : 'opacity-40 hover:opacity-100'}`} style={{ background: t.bg }} />
             ))}
           </div>
-          <button onClick={() => setShowGuides(!showGuides)} className="p-2.5 bg-neutral-900 border border-white/10 rounded-full text-white hover:bg-neutral-800 shadow-xl">{showGuides ? <EyeOff size={18} /> : <Eye size={18} />}</button>
-          <button onClick={downloadPNG} className="bg-white text-black px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 hover:text-white transition-all">Export</button>
+          <button onClick={() => setShowGuides(!showGuides)} className="p-2 md:p-2.5 bg-neutral-900 border border-white/10 rounded-full text-white hover:bg-neutral-800 shadow-xl">{showGuides ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+          <button onClick={downloadPNG} className="bg-white text-black px-3 md:px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 hover:text-white transition-all">Export</button>
         </div>
 
-        <div className="relative w-full max-w-[85vh] aspect-square">
+        <div className="relative w-[min(92vw,48dvh)] md:w-full md:max-w-[85vh] aspect-square">
           <canvas ref={mainCanvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} className="absolute inset-0 w-full h-full drop-shadow-[0_0_80px_rgba(0,0,0,0.6)]" />
           <canvas ref={overlayCanvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} className="absolute inset-0 w-full h-full pointer-events-none" />
         </div>
 
-        <div className="absolute bottom-12 w-80 flex flex-col gap-2">
+        <div className="absolute bottom-3 left-4 right-4 md:bottom-12 md:left-auto md:right-auto md:w-80 flex flex-col gap-2">
            <div className="flex justify-between text-[8px] font-black uppercase text-neutral-500 tracking-tighter">
               <span>Sequence Progress</span>
               <span>{Math.round(progress)}%</span>
