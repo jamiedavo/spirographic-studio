@@ -232,6 +232,10 @@ export default function App() {
     });
   }, [showGuides, outerRadius, innerRadius, satelliteRadius, pens, activeTheme, getGearPositions, getPenPosition]);
 
+  useEffect(() => {
+  drawGuides();
+}, [drawGuides]);
+
   // ─── Animation ──────────────────────────────────────────────────
 
   const animate = useCallback(() => {
